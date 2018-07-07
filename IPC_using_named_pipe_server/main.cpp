@@ -2,6 +2,12 @@
 #include <stdio.h>
 #include <tchar.h>
 #include <strsafe.h>
+#include <iostream>
+#include <string>
+#include <streamlabs.h>
+#include <vector>
+
+using namespace std;
 
 #define PIPE_TIMEOUT 5000
 #define BUFSIZE 4096
@@ -291,9 +297,50 @@ BOOL ConnectToNewClient(HANDLE hPipe, LPOVERLAPPED lpo)
    return fPendingIO;
 }
 
+vector<Streamlabs*> companies;
+
+string ExecuteCommmand(string command) {
+    //example is get.address.1
+    string getaddress = "address.get.";
+
+    //example is set.address.1.NewYork
+    string setaddress = "address.set.";
+
+    cout << "ExecuteCommmand " << command << endl;
+    if (command == "create") {
+        cout << "ExecuteCommmand create.company" << endl;
+        if (companies.size() > 8) {
+            return "In this demo no more than 9 companies can be created";
+        }
+        companies.push_back(new Streamlabs());
+        return "Created new company with id " + std::to_string(companies.size());
+    } else if (command.compare(0, getaddress.length(), getaddress) == 0) {
+        int index = command[getaddress.length()] - '0' - 1;
+        if (index < 0 || index >= companies.size()) {
+            return "This ID is not available";
+        }
+        return companies[index]->companyAdress;
+    } else if (command.compare(0, setaddress.length(), setaddress) == 0) {
+        int index = command[getaddress.length()] - '0' - 1;
+        if (index < 0 || index >= companies.size()) {
+            return "This ID is not available";
+        }
+        companies[index]->companyAdress = command.substr(setaddress.length() + 2, command.length());
+        return companies[index]->companyAdress;
+    } else {
+        return "Commands are create, address.get.[id], address.set.[id].[address]";
+    }
+}
+
 VOID GetAnswerToRequest(LPPIPEINST pipe)
 {
    _tprintf( TEXT("[%d] %s\n"), pipe->hPipeInst, pipe->chRequest);
-   StringCchCopy( pipe->chReply, BUFSIZE, TEXT("Default answer from server") );
+
+   //Let's convert to string...
+   wstring wstr(&pipe->chRequest[0]); //convert to wstring
+   string str(wstr.begin(), wstr.end()); //and convert to string.
+   string reply = ExecuteCommmand(str);
+   wstring wstrreply(reply.begin(), reply.end());
+   StringCchCopy( pipe->chReply, BUFSIZE, wstrreply.c_str() );
    pipe->cbToWrite = (lstrlen(pipe->chReply)+1)*sizeof(TCHAR);
 }

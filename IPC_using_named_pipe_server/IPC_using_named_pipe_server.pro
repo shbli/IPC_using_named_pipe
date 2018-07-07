@@ -4,6 +4,10 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += \
-        main.cpp
+        main.cpp \
+    streamlabs.cpp
 
 DESTDIR = $$PWD/../bin
+
+HEADERS += \
+    streamlabs.h
